@@ -1,0 +1,9 @@
+# dataset
+data/*
+
+models/pretrain/*
+checkpoint/*
+
+__pycache__/*
+Lib/*
+Scripts/*

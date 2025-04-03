@@ -1,3 +1,24 @@
+## packages
+- scikit-learn
+- torch
+- torchvision
+- timm
+- thop
+- matplotlib
+- numpy
+- torchsampler
+
+be sure to use cuda torch:
+```sh
+pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+```
+
+NOTE: `/models/PosterV2_7cls.py` has hardcoded image/face feature backbone model paths on lines `250` and `260`
+
+manually change these when run on your own machine
+
+NOTE: obtain RAF-DB from Kaggle; it is sufficient to, after extracting, simply rename `test` directory to `valid`; do not restructure the folders as suggested below
+
 # POSTER V2: A simpler and stronger facial expression recognition network 
 
 [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/poster-v2-a-simpler-and-stronger-facial/facial-expression-recognition-on-affectnet)](https://paperswithcode.com/sota/facial-expression-recognition-on-affectnet?p=poster-v2-a-simpler-and-stronger-facial)
