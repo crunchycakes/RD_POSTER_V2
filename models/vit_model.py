@@ -616,8 +616,18 @@ class VisionTransformer(nn.Module):
         if self.dist_token is None:
             x = torch.cat((cls_token, x), dim=1)  # [B, 197, 768]
         else:
-            x = torch.cat((cls_token, self.dist_token.expand(x.shape[0], -1, -1), x), dim=1)
-        # print(x.shape)
+            x = torch.cat((
+            cls_token,
+            self.dist_token.expand(x.shape[0], -1, -1), x)   , dim=1)
+        # 🔧 Resize pos_embed if needed
+        if x.shape[1] != self.pos_embed.shape[1]:
+            self.pos_embed = nn.Parameter(F.interpolate(
+            self.pos_embed.transpose(1, 2),
+            size=x.shape[1],
+            mode='linear',
+            align_corners=False
+        ).transpose(1, 2).to(x.device)) 
+
         x = self.pos_drop(x + self.pos_embed)
         x = self.blocks(x)
         x = self.norm(x)

@@ -2,7 +2,8 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 from .mobilefacenet import MobileFaceNet
-from .ir50 import Backbone
+from .efficientnet import EfficientNetFeatures
+#from .ir50 import Backbone
 from .vit_model import VisionTransformer, PatchEmbed
 from timm.models.layers import trunc_normal_, DropPath
 from thop import profile
@@ -254,12 +255,12 @@ class pyramid_trans_expr2(nn.Module):
         for param in self.face_landback.parameters():
             param.requires_grad = False
 
-        self.VIT = VisionTransformer(depth=2, embed_dim=embed_dim)
+        
+        self.VIT = VisionTransformer(depth=2, embed_dim=embed_dim, in_c=sum(self.N))
+        self.image_backbone = EfficientNetFeatures('efficientnet-b0')
+        #ir_checkpoint = torch.load(r'/home/sbhowmic/POSTER_V2-main/POSTER_V2-main/models/pretrain/ir50.pth', map_location=lambda storage, loc: storage)
 
-        self.ir_back = Backbone(50, 0.0, 'ir')
-        ir_checkpoint = torch.load(r'C:\Users\Kevin\Desktop\uni\winter25\mm805\proj\RD_POSTER_V2\models\pretrain\ir50.pth', map_location=lambda storage, loc: storage)
-
-        self.ir_back = load_pretrained_weights(self.ir_back, ir_checkpoint)
+        #self.ir_back = load_pretrained_weights(self.ir_back, ir_checkpoint)
 
         self.attn1 = WindowAttentionGlobal(dim=dims[0], num_heads=num_heads[0], window_size=window_size[0])
         self.attn2 = WindowAttentionGlobal(dim=dims[1], num_heads=num_heads[1], window_size=window_size[1])
@@ -267,10 +268,9 @@ class pyramid_trans_expr2(nn.Module):
         self.window1 = window(window_size=window_size[0], dim=dims[0])
         self.window2 = window(window_size=window_size[1], dim=dims[1])
         self.window3 = window(window_size=window_size[2], dim=dims[2])
-        self.conv1 = nn.Conv2d(in_channels=dims[0], out_channels=dims[0], kernel_size=3, stride=2, padding=1)
-        self.conv2 = nn.Conv2d(in_channels=dims[1], out_channels=dims[1], kernel_size=3, stride=2, padding=1)
-        self.conv3 = nn.Conv2d(in_channels=dims[2], out_channels=dims[2], kernel_size=3, stride=2, padding=1)
-
+        self.conv1 = nn.Conv2d(in_channels=24, out_channels=dims[0], kernel_size=3, stride=1, padding=1)   # x_ir1 is already 56x56
+        self.conv2 = nn.Conv2d(in_channels=112, out_channels=dims[1], kernel_size=3, stride=1, padding=1)  # x_ir2 is 14x14
+        self.conv3 = nn.Conv2d(in_channels=320, out_channels=dims[2], kernel_size=3, stride=1, padding=1)
         dpr = [x.item() for x in torch.linspace(0, 0.5, 5)]
         self.ffn1 = feedforward(dim=dims[0], window_size=window_size[0], layer_scale=1e-5, drop_path=dpr[0])
         self.ffn2 = feedforward(dim=dims[1], window_size=window_size[1], layer_scale=1e-5, drop_path=dpr[1])
@@ -293,12 +293,14 @@ class pyramid_trans_expr2(nn.Module):
                      _to_query(x_face2, self.N[1], self.num_heads[1], self.dim_head[1]), \
                      _to_query(x_face3, self.N[2], self.num_heads[2], self.dim_head[2])
 
-        x_ir1, x_ir2, x_ir3 = self.ir_back(x)
+        x_ir1, x_ir2, x_ir3 = self.image_backbone(x)
+        #x_ir1, x_ir2, x_ir3 = self.ir_back(x)
     
         x_ir1, x_ir2, x_ir3 = self.conv1(x_ir1), self.conv2(x_ir2), self.conv3(x_ir3)
         x_window1, shortcut1 = self.window1(x_ir1)
         x_window2, shortcut2 = self.window2(x_ir2)
         x_window3, shortcut3 = self.window3(x_ir3)
+
 
         o1, o2, o3 = self.attn1(x_window1, q1), self.attn2(x_window2, q2), self.attn3(x_window3, q3)
 
