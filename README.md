@@ -7,13 +7,14 @@
 - matplotlib
 - numpy
 - torchsampler
+- efficientnet-pytorch
 
-be sure to use cuda torch:
+be sure to use cuda torch if on windows:
 ```sh
 pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 ```
 
-NOTE: `/models/PosterV2_7cls.py` has hardcoded image/face feature backbone model paths on lines `250` and `260`
+NOTE: `/models/PosterV2_7cls.py` has hardcoded image/face feature backbone model paths around lines `250` and `260`
 
 manually change these when run on your own machine
 

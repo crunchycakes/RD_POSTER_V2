@@ -225,6 +225,7 @@ class feedforward(nn.Module):
         self.mlp = Mlp(in_features=dim, hidden_features=int(dim * mlp_ratio), act_layer=act_layer, drop=drop)
         self.norm = nn.LayerNorm(dim)
         self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
+        self.interp_weights = torch.ones(224)
     def forward(self, attn_windows, shortcut):
         B, H, W, C = shortcut.shape
         h_w = int(torch.div(H, self.window_size).item())
@@ -284,8 +285,22 @@ class pyramid_trans_expr2(nn.Module):
         self.embed_v = PatchEmbed(img_size=14, patch_size=14, in_c=256, embed_dim=768)
 
     def forward(self, x):
-        x_face = F.interpolate(x, size=112)
+        # --- begin default face landmark interpolation
+        #x_face = F.interpolate(x, size=112)
+        #tfac = self.face_landback(x_face)
+        #x_face1 , x_face2, x_face3 = tfac
+        # --- end default face landmark interpolation
+
+        # --- begin custom face landmark interpolation
+        
+        rows, _ = torch.sort(torch.multinomial(self.interp_weights, num_samples=112, replacement=False))
+        cols, _ = torch.sort(torch.multinomial(self.interp_weights, num_samples=112, replacement=False))
+
+        x_face = x[:, :, rows, :]
+        x_face = x_face[:, :, :, cols]
+        # --- end custom face landmark interpolation
         x_face1 , x_face2, x_face3 = self.face_landback(x_face)
+
         x_face3 = self.last_face_conv(x_face3)
         x_face1, x_face2, x_face3 = _to_channel_last(x_face1), _to_channel_last(x_face2), _to_channel_last(x_face3)
 
