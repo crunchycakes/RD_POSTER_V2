@@ -225,7 +225,6 @@ class feedforward(nn.Module):
         self.mlp = Mlp(in_features=dim, hidden_features=int(dim * mlp_ratio), act_layer=act_layer, drop=drop)
         self.norm = nn.LayerNorm(dim)
         self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
-        self.interp_weights = torch.ones(224)
     def forward(self, attn_windows, shortcut):
         B, H, W, C = shortcut.shape
         h_w = int(torch.div(H, self.window_size).item())
@@ -249,6 +248,7 @@ class pyramid_trans_expr2(nn.Module):
         self.window_size = window_size
         self.N = [win * win for win in window_size]
         self.face_landback = MobileFaceNet([112, 112], 136)
+        self.interp_weights = torch.ones(224)
         face_landback_checkpoint = torch.load(r'C:\Users\Kevin\Desktop\uni\winter25\mm805\proj\RD_POSTER_V2\models\pretrain\mobilefacenet_model_best.pth.tar',
                                               map_location=lambda storage, loc: storage)
         self.face_landback.load_state_dict(face_landback_checkpoint['state_dict'])
